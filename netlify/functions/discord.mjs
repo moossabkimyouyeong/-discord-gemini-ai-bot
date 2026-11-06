@@ -1,5 +1,5 @@
 import nacl from "tweetnacl";
-import {getStore} from "@netlify/blobs";
+
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json"}});
 const env=k=>Netlify.env.get(k);
 const btn=(label,custom_id,style=2)=>({type:2,label,custom_id,style});
@@ -10,13 +10,13 @@ const field=(components,id)=>components?.flatMap(x=>x.components||[]).find(x=>x.
 const person=d=>d.member?.user||d.user||{};
 const userId=d=>person(d).id||"";
 const memoryKey=d=>[d.guild_id||"dm",userId(d)].join(":");
-const store=()=>getStore({name:"chizhu-conversations",consistency:"strong"});
-async function history(d){try{return (await store().get(memoryKey(d),{type:"json"}))||[];}catch(e){console.error("memory read",e);return [];}}
-async function saveHistory(d,items){try{await store().setJSON(memoryKey(d),items.slice(-12));return true;}catch(e){console.error("memory write",e);return false;}}
-const bioStore=()=>getStore({name:"chizhu-bios",consistency:"strong"});
-async function getBio(d){try{return (await bioStore().get(userId(d),{type:"text"}))||"";}catch(e){console.error("bio read",e);return "";}}
-async function setBio(d,value){try{await bioStore().set(userId(d),value.slice(0,500));return true;}catch(e){console.error("bio write",e);return false;}}
-async function deleteHistory(d){try{await store().delete(memoryKey(d));return true;}catch(e){console.error("memory delete",e);return false;}}
+const store=async()=>{const {getStore}=await import("@netlify/blobs");return getStore({name:"chizhu-conversations",consistency:"strong"});};
+async function history(d){try{return (await (await store()).get(memoryKey(d),{type:"json"}))||[];}catch(e){console.error("memory read",e);return [];}}
+async function saveHistory(d,items){try{await (await store()).setJSON(memoryKey(d),items.slice(-12));return true;}catch(e){console.error("memory write",e);return false;}}
+const bioStore=async()=>{const {getStore}=await import("@netlify/blobs");return getStore({name:"chizhu-bios",consistency:"strong"});};
+async function getBio(d){try{return (await (await bioStore()).get(userId(d),{type:"text"}))||"";}catch(e){console.error("bio read",e);return "";}}
+async function setBio(d,value){try{await (await bioStore()).set(userId(d),value.slice(0,500));return true;}catch(e){console.error("bio write",e);return false;}}
+async function deleteHistory(d){try{await (await store()).delete(memoryKey(d));return true;}catch(e){console.error("memory delete",e);return false;}}
 function profile(d){
  const u=person(d),m=d.member||{},nick=m.nick||u.global_name||u.username||"알 수 없음";
  return {nick,username:u.username||"알 수 없음",displayName:u.global_name||"",id:u.id||"",serverId:d.guild_id||"",channelId:d.channel_id||"",roles:m.roles||[],bot:!!u.bot};
