@@ -16,7 +16,7 @@ async function answer(data,mode){
   try{
    const headers={"content-type":"application/json","x-goog-api-key":key};
    const body=JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:input}]}],generationConfig:{maxOutputTokens:1000}});
-   let models=configured&&!/tts|audio|image/i.test(configured)?[configured.replace("models/","")]:["gemini-2.5-flash-lite","gemini-2.5-flash"];
+   let models=["gemini-2.5-flash-lite","gemini-2.5-flash"];
    let lastError="";
    for(let i=0;i<models.length;i++){
     const model=models[i];
