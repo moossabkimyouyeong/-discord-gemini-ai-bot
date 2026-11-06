@@ -1,0 +1,30 @@
+name: Register Discord slash command
+on:
+  workflow_dispatch:
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Register /메뉴
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_APPLICATION_ID: "1568139367648600185"
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ]; then
+            echo "Add DISCORD_BOT_TOKEN to GitHub Actions secrets first."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error
+          app=os.environ["DISCORD_APPLICATION_ID"]
+          url=f"https://discord.com/api/v10/applications/{app}/commands"
+          payload=json.dumps({"name":"메뉴","description":"Gemini AI 기능 버튼 메뉴","type":1}).encode()
+          req=urllib.request.Request(url,data=payload,headers={"Authorization":"Bot "+os.environ["DISCORD_BOT_TOKEN"],"Content-Type":"application/json"},method="POST")
+          try:
+              with urllib.request.urlopen(req) as response:
+                  data=json.load(response)
+                  print("Registered:",data.get("name"),data.get("id"))
+          except urllib.error.HTTPError as e:
+              print("Discord API error",e.code,e.read().decode()[:1000])
+              raise
+          PY
