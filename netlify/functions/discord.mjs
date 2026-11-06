@@ -12,29 +12,15 @@ async function answer(data,mode){
  try{
   const key=env("GEMINI_API_KEY");if(!key)throw Error("Gemini API key missing");
   const configured=env("GEMINI_MODEL");
-  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),20000);
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),45000);
   try{
    const headers={"content-type":"application/json","x-goog-api-key":key};
    const body=JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:input}]}],generationConfig:{maxOutputTokens:1000}});
-   let models=["gemini-2.5-flash-lite","gemini-2.5-flash"];
-   let lastError="";
-   for(let i=0;i<models.length;i++){
-    const model=models[i];
-    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{method:"POST",signal:controller.signal,headers,body});
-    const out=await r.json();
-    if(r.ok){content=out.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"답변을 생성하지 못했어.";break;}
-    lastError="Gemini HTTP "+r.status+": "+(out.error?.message||"응답 없음").slice(0,250);
-    if(r.status===404&&i===models.length-1){
-     const list=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100",{headers:{"x-goog-api-key":key},signal:controller.signal});
-     if(list.ok){
-      const data=await list.json();
-      const available=(data.models||[]).filter(m=>m.supportedGenerationMethods?.includes("generateContent")).map(m=>m.name.replace("models/",""));
-      const preferred=available.filter(n=>/flash-lite|flash/.test(n)&&!/tts|audio|image|live|native/i.test(n)&&!models.includes(n));
-      if(preferred.length){models.push(preferred[0]);continue;}
-     }
-    }
-    if(r.status!==404||i===models.length-1)throw Error(lastError);
-   }
+   const model="gemini-2.5-flash-lite";
+   const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{method:"POST",signal:controller.signal,headers,body});
+   const out=await r.json();
+   if(!r.ok)throw Error("Gemini HTTP "+r.status+": "+(out.error?.message||"응답 없음").slice(0,600));
+   content=out.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"답변을 생성하지 못했어.";
   }finally{clearTimeout(timeout);}
  }catch(e){console.error("AI error",e);const msg=String(e?.message||e);content=msg.includes("API key missing")?"Gemini API 키가 Netlify에 없어.":msg.includes("429")?"Gemini 무료 사용량 또는 요청 한도 초과(429).":msg.includes("403")?"Gemini API 접근 거부(403). 키의 권한과 프로젝트 설정을 확인해.":msg.includes("404")?"Gemini 텍스트 모델을 찾을 수 없어(404): "+msg.slice(0,350):msg.includes("400")?"Gemini 요청 오류(400): "+msg.slice(0,450):msg.includes("abort")?"Gemini 응답 시간 초과. 다시 시도해.":"Gemini 오류: "+msg.slice(0,200);}
  const app=env("DISCORD_APPLICATION_ID");if(!app)return;
