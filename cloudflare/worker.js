@@ -14,12 +14,12 @@ async function remove(env,key){if(!env.BOT_DATA)return false;await env.BOT_DATA.
 function profile(d){const u=user(d);return {nick:d.member?.nick||u.global_name||u.username||"알 수 없음",username:u.username||"알 수 없음",displayName:u.global_name||"",id:u.id||"",serverId:d.guild_id||"",channelId:d.channel_id||"",roles:d.member?.roles||[]};}
 async function verify(req,raw,publicKey){
  const signature=req.headers.get("x-signature-ed25519"),stamp=req.headers.get("x-signature-timestamp");
- if(!signature||!stamp||!publicKey||!/^[0-9a-f]+$/i.test(signature)||!/^[0-9a-f]+$/i.test(publicKey))return false;
+ if(!signature||!stamp||!publicKey)return false;
+ const bytes=h=>{if(!/^(?:[0-9a-f]{2})+$/i.test(h))throw Error("invalid hex");return Uint8Array.from(h.match(/.{2}/g),x=>parseInt(x,16));};
  try{
-  const bytes=h=>Uint8Array.from(h.match(/.{2}/g).map(x=>parseInt(x,16)));
-  const key=await crypto.subtle.importKey("raw",bytes(publicKey),{name:"Ed25519"},false,["verify"]);
-  return await crypto.subtle.verify("Ed25519",key,bytes(signature),new TextEncoder().encode(stamp+raw));
- }catch(e){console.error("signature verification",e);return false;}
+  const key=await crypto.subtle.importKey("raw",bytes(publicKey.trim()),{name:"Ed25519"},false,["verify"]);
+  return await crypto.subtle.verify({name:"Ed25519"},key,bytes(signature),new TextEncoder().encode(stamp+raw));
+ }catch(e){console.error("Discord signature verification failed",String(e));return false;}
 }
 async function patch(d,env,content){
  if(!env.DISCORD_APPLICATION_ID)return;
