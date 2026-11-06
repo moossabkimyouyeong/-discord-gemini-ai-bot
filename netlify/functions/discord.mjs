@@ -3,7 +3,7 @@ import {getStore} from "@netlify/blobs";
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json"}});
 const env=k=>Netlify.env.get(k);
 const btn=(label,custom_id,style=2)=>({type:2,label,custom_id,style});
-const menu=()=>reply({type:4,data:{embeds:[{title:"🤖 Gemini AI 메뉴",description:"버튼을 눌러 기능을 선택하세요.",color:5793266}],components:[{type:1,components:[btn("💬 AI 질문","ai:question",1),btn("📝 요약","ai:summary"),btn("🌐 번역","ai:translate",3),btn("❓ 도움말","ai:help")]},{type:1,components:[btn("👤 내 정보","ai:profile"),btn("📝 소개글 등록","ai:bio"),btn("🗑️ 기억 삭제","ai:forget",4)]}]}});
+const menu=()=>reply({type:4,data:{content:"🤖 **취즈단봇 AI 메뉴**\n아래 버튼을 눌러줘.",components:[{type:1,components:[btn("💬 AI 질문","ai:question",1),btn("📝 요약","ai:summary"),btn("🌐 번역","ai:translate",3)]},{type:1,components:[btn("👤 내 정보","ai:profile"),btn("📝 소개글 등록","ai:bio"),btn("🗑️ 기억 삭제","ai:forget",4)]}],allowed_mentions:{parse:[]}}});
 const modal=mode=>reply({type:9,data:{custom_id:"modal:"+mode,title:mode==="question"?"AI 질문":mode==="summary"?"글 요약":mode==="bio"?"소개글 등록":"번역",components:[{type:1,components:[{type:4,custom_id:"input",label:mode==="bio"?"내 소개글":"내용",style:2,required:true,max_length:mode==="bio"?500:1800}]},...(mode==="translate"?[{type:1,components:[{type:4,custom_id:"language",label:"번역할 언어",style:1,required:true,max_length:40}]}]:[])]}});
 const field=(components,id)=>components?.flatMap(x=>x.components||[]).find(x=>x.custom_id===id)?.value||"";
 
