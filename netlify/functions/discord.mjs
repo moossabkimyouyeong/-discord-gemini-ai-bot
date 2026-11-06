@@ -49,6 +49,15 @@ async function answer(data,mode){
  const r=await fetch(url,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({content:content.slice(0,1900),allowed_mentions:{parse:[]}})});
  if(!r.ok)console.error("Discord followup",r.status);
 }
+async function finishInteraction(data,task){
+ let content;
+ try{content=await task();}catch(e){console.error("Interaction task failed",e);content="처리 중 오류가 발생했어. 잠시 후 다시 시도해.";}
+ const app=env("DISCORD_APPLICATION_ID");
+ if(!app)return;
+ const url="https://discord.com/api/v10/webhooks/"+app+"/"+data.token+"/messages/@original";
+ const r=await fetch(url,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({content:String(content).slice(0,1900),allowed_mentions:{parse:[]}})});
+ if(!r.ok)console.error("Discord followup",r.status);
+}
 export default async(req,context)=>{
  if(req.method!=="POST")return new Response("Discord interactions endpoint");
  const signature=req.headers.get("x-signature-ed25519"),timestamp=req.headers.get("x-signature-timestamp"),key=env("DISCORD_PUBLIC_KEY");
@@ -60,13 +69,13 @@ export default async(req,context)=>{
  if(data.type===2&&data.data?.name==="메뉴")return menu();
  if(data.type===3){
   const id=data.data?.custom_id;
-  if(id==="ai:profile")return reply({type:4,data:{content:await profileText(data),flags:64}});
+  if(id==="ai:profile"){context.waitUntil(finishInteraction(data,()=>profileText(data)));return reply({type:5,data:{flags:64}});}
   if(id==="ai:bio")return modal("bio");
-  if(id==="ai:forget"){const ok=await deleteHistory(data);return reply({type:4,data:{content:ok?"이 서버에서 저장된 내 AI 대화 기억을 삭제했어.":"기억 삭제에 실패했어. 다시 시도해.",flags:64}});}
+  if(id==="ai:forget"){context.waitUntil(finishInteraction(data,async()=>await deleteHistory(data)?"이 서버에서 저장된 내 AI 대화 기억을 삭제했어.":"기억 삭제에 실패했어. 다시 시도해."));return reply({type:5,data:{flags:64}});}
   if(id==="ai:help")return reply({type:4,data:{content:"💬 질문, 📝 요약, 🌐 번역 버튼을 눌러줘.",flags:64}});
   if(["ai:question","ai:summary","ai:translate"].includes(id))return modal(id.split(":")[1]);
  }
- if(data.type===5&&data.data?.custom_id==="modal:bio"){const value=field(data.data.components,"input").trim();const ok=value&&await setBio(data,value);return reply({type:4,data:{content:ok?"소개글 저장 완료! 이제 AI가 네 소개글을 참고할 수 있어.":"소개글 저장 실패. 다시 시도해.",flags:64}});}
+ if(data.type===5&&data.data?.custom_id==="modal:bio"){const value=field(data.data.components,"input").trim();context.waitUntil(finishInteraction(data,async()=>value&&await setBio(data,value)?"소개글 저장 완료! 이제 AI가 네 소개글을 참고할 수 있어.":"소개글 저장 실패. 다시 시도해."));return reply({type:5,data:{flags:64}});}
  if(data.type===5&&data.data?.custom_id?.startsWith("modal:")){
   context.waitUntil(answer(data,data.data.custom_id.split(":")[1]));
   return reply({type:5,data:{flags:64}});
