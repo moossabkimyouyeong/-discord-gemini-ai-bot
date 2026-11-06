@@ -16,7 +16,7 @@ async function answer(data,mode){
   try{
    const headers={"content-type":"application/json","x-goog-api-key":key};
    const body=JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:input}]}],generationConfig:{maxOutputTokens:1000}});
-   let models=configured?[configured.replace(/^models\\//,"")]:["gemini-2.5-flash-lite","gemini-2.5-flash"];
+   let models=configured?[configured.replace("models/","")]:["gemini-2.5-flash-lite","gemini-2.5-flash"];
    let lastError="";
    for(let i=0;i<models.length;i++){
     const model=models[i];
@@ -28,7 +28,7 @@ async function answer(data,mode){
      const list=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100",{headers:{"x-goog-api-key":key},signal:controller.signal});
      if(list.ok){
       const data=await list.json();
-      const available=(data.models||[]).filter(m=>m.supportedGenerationMethods?.includes("generateContent")).map(m=>m.name.replace(/^models\\//,""));
+      const available=(data.models||[]).filter(m=>m.supportedGenerationMethods?.includes("generateContent")).map(m=>m.name.replace("models/",""));
       const preferred=available.filter(n=>/flash-lite|flash/.test(n)&&!models.includes(n));
       if(preferred.length){models.push(preferred[0]);continue;}
      }
