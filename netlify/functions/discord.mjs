@@ -16,7 +16,7 @@ async function answer(data,mode){
   try{
    const headers={"content-type":"application/json","x-goog-api-key":key};
    const body=JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:input}]}],generationConfig:{maxOutputTokens:1000}});
-   const model="gemini-2.5-flash-lite";
+   const model="gemini-3.5-flash-lite";
    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{method:"POST",signal:controller.signal,headers,body});
    const out=await r.json();
    if(!r.ok)throw Error("Gemini HTTP "+r.status+": "+(out.error?.message||"응답 없음").slice(0,600));
