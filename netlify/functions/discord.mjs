@@ -29,14 +29,14 @@ async function answer(data,mode){
      if(list.ok){
       const data=await list.json();
       const available=(data.models||[]).filter(m=>m.supportedGenerationMethods?.includes("generateContent")).map(m=>m.name.replace("models/",""));
-      const preferred=available.filter(n=>/flash-lite|flash/.test(n)&&!models.includes(n));
+      const preferred=available.filter(n=>/flash-lite|flash/.test(n)&&!/tts|audio|image|live|native/i.test(n)&&!models.includes(n));
       if(preferred.length){models.push(preferred[0]);continue;}
      }
     }
     if(r.status!==404||i===models.length-1)throw Error(lastError);
    }
   }finally{clearTimeout(timeout);}
- }catch(e){console.error("AI error",e);const msg=String(e?.message||e);content=msg.includes("API key missing")?"Gemini API 키가 Netlify에 없어.":msg.includes("429")?"Gemini 무료 사용량 또는 요청 한도 초과(429).":msg.includes("403")?"Gemini API 접근 거부(403). 키의 권한과 프로젝트 설정을 확인해.":msg.includes("404")?"Gemini 모델을 찾을 수 없어(404). GEMINI_MODEL 설정을 확인해.":msg.includes("400")?"Gemini 요청 오류(400): "+msg.slice(0,450):msg.includes("abort")?"Gemini 응답 시간 초과. 다시 시도해.":"Gemini 오류: "+msg.slice(0,200);}
+ }catch(e){console.error("AI error",e);const msg=String(e?.message||e);content=msg.includes("API key missing")?"Gemini API 키가 Netlify에 없어.":msg.includes("429")?"Gemini 무료 사용량 또는 요청 한도 초과(429).":msg.includes("403")?"Gemini API 접근 거부(403). 키의 권한과 프로젝트 설정을 확인해.":msg.includes("404")?"Gemini 텍스트 모델을 찾을 수 없어(404): "+msg.slice(0,350):msg.includes("400")?"Gemini 요청 오류(400): "+msg.slice(0,450):msg.includes("abort")?"Gemini 응답 시간 초과. 다시 시도해.":"Gemini 오류: "+msg.slice(0,200);}
  const app=env("DISCORD_APPLICATION_ID");if(!app)return;
  const url="https://discord.com/api/v10/webhooks/"+app+"/"+data.token+"/messages/@original";
  const r=await fetch(url,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({content:content.slice(0,1900),allowed_mentions:{parse:[]}})});
